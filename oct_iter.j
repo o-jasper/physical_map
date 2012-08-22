@@ -16,9 +16,6 @@ type OctTreeIter
   downto_level::Int16
 end
 
-OctTreeIter(at::OctTree, upto_level::Integer,downto_level::Integer) = 
-    OctTreeIter([up_to_level(at,upto_level)],Array(OctTree,0),
-                int16(downto_level))
 OctTreeIter(at::OctTree) =
     OctTreeIter([at],Array(OctTree,0),typemin(Int16))
 
@@ -52,3 +49,11 @@ end
 
 done(q::Union(OctTreeIter,OctTree),iter::OctTreeIter) = 
     isempty(iter.list) && isempty(iter.next_list)
+
+type OctTreeIterAt
+
+#Searches a block in space.
+function iter_block(in::QuadTree,
+                    from::(Number,Number,Number), to::(Number,Number,Number))
+  
+end
