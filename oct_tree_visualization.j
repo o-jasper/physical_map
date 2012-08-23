@@ -12,7 +12,8 @@
 #Draw a single node in lines.
 function draw_lines_at(at::OctTree)
   s = 2*2.0^at.level
-  x,y,z = (at.x-s/2, at.y-s/2, at.z-s/2)
+  at_x,at_y,at_z = at.pos
+  x,y,z = (at_x-s/2, at_y-s/2, at_z-s/2)
   function loop_at_z(z)
     @with_primitive GL_LINE_LOOP begin
       glvertex(x,  y,  z)
@@ -36,25 +37,11 @@ function draw_lines_at(at::OctTree)
   end
 end
 #Draw the given node and the lower nodes in lines
-#function draw_lines_lower(at::OctTree, downto_level::Integer)
-#  if at.level < downto_level
-#    return nothing
-#  end
-#  draw_lines_at(at)
-#  for lower in at.arr
-#    if lower!=nothing
-#      draw_lines_lower(lower, downto_level)
-#    end
-#  end
-#end
-#draw_lines_lower(at::OctTree) = draw_lines_lower(at, typemin(Int16)) #All of them.
-##Draw all lines, including up, unless below some level.
-function draw_lines_whole(of::OctTree, 
-                          upto_level::Integer,downto_level::Integer)
-  for q = OctTreeIter(of, upto_level,downto_level)
+function draw_lines_whole(of::OctTree, downto_level::Integer)
+  for q = OctTreeIter(up_to_top(of), downto_level)
     draw_lines_at(q)
   end
 end
 
 draw_lines_whole(at::OctTree) = 
-    draw_lines_whole(at, typemax(Int16),typemin(Int16)) #All of them.
+    draw_lines_whole(at, typemin(Int16)) #All of them.

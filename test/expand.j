@@ -63,10 +63,9 @@ function run_this ()
     if next_t < time()
       gen = (-1+2*rand(),-1+2*rand(),-1+2*rand())
       push(list,gen)
-      x,y,z  = gen
-      println("$expand_cnt $x,$y,$z")
+      println("$expand_cnt $gen")
       expand_cnt += 1
-      expand_to_level(ot, x,y,z, -6)
+      expand_to_level(ot, gen, -6)
       next_t = time() + wait_t
       consistency_check(ot)
     end

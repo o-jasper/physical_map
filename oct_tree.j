@@ -22,17 +22,17 @@ end
 type OctTree
   parent::MaybeOctTree
   level::Int16 #Depth, size of current block is 2*2^(+level)
-  x::Float64
-  y::Float64
-  z::Float64
+  pos::(Float64,Float64,Float64)
   
   arr::Array{MaybeOctTree,1}
   
   list::Array{Any,1} #TODO template it?
 
-  OctTree(parent,level::Integer, x::Number,y::Number,z::Number) =
-      new(parent,int16(level), float64(x),float64(y),float64(z),
-          mk_nothing_arr(), Array(Any,0))
+  function OctTree(parent,level::Integer, pos::(Number,Number,Number))
+    x,y,z = pos
+    return new(parent,int16(level), (float64(x),float64(y),float64(z)),
+               mk_nothing_arr(), Array(Any,0))
+  end
 end
 
 function children_cnt(o::OctTree)
@@ -46,38 +46,56 @@ function children_cnt(o::OctTree)
 end
 
 function show(o::OctTree)
-  print("<OctTree level $(o.level), pos [$(o.x),$(o.y),$(o.z)]")
+  print("<OctTree level $(o.level), pos $(o.pos)")
   if o.parent!=nothing
     print(" has parent")
   end
   println(" children_cnt $(children_cnt(o))>")
 end
 
-OctTree(parent::OctTree, x::Number,y::Number,z::Number) =
-    OctTree(parent, parent.level-1, x,y,z)
-OctTree(level::Integer, x::Number,y::Number,z::Number) =
-    OctTree(nothing, level, x,y,z)
-OctTree(level::Integer) = OctTree(level, 0,0,0)
+OctTree(parent::OctTree, pos::(Number,Number,Number)) =
+    OctTree(parent, parent.level-1, pos)
+OctTree(level::Integer, pos::(Number,Number,Number)) =
+    OctTree(nothing, level, pos)
+OctTree(level::Integer) = OctTree(level, (0,0,0))
 OctTree() = OctTree(0)
 
 #NOTE much better algorithm involving multiple levels on one structure and
 # jumping straight to a node on them,,, Avoiding mission creep, i guess.
 
-index_of_pos(from::OctTree,  x::Number,y::Number,z::Number) =
-    1+(x>from.x ? 1 : 0) + (y>from.y ? 2 : 0) + (z>from.z ? 4 : 0)
+#These three things enables the {T} stuff here to work.
+#The one for the point is right here.
+
+#Gets the index of the array where the subnodes live.
+function index_of_pos(from::OctTree, pos::(Number,Number,Number))
+  x,y,z = pos
+  f_x,f_y,f_z = from.pos
+  return 1+(x>f_x ? 1 : 0) + (y>f_y ? 2 : 0) + (z>f_z ? 4 : 0)
+end
+#Whether a octtree node contains the object.
+function is_contained(at::OctTree, pos::(Number,Number,Number))
+  half = node_size(at)/2
+  x,y,z = pos
+  ax,ay,az = at.pos
+  return ax-half <= x <= ax+half &&
+         ay-half <= y <= ay+half &&
+         az-half <= z <= az+half 
+end
+#Which direction an octree might expand to to fit the thing.
+function octtree_dirs(from::OctTree, pos::(Number,Number,Number))
+  x,y,z = pos
+  f_x,f_y,f_z = from.pos
+  return (x>f_x, y>f_y, z>f_z)
+end
+
+node_of_pos(from::OctTree, pos::(Number,Number,Number)) =
+    from.arr[index_of_pos(from, pos)]
 
 node_size(of::OctTree) = (2.0^(of.level+1))
 
-function is_contained(at::OctTree, x::Number,y::Number,z::Number)
-  half = node_size(at)/2
-  return at.x-half <= x <= at.x+half &&
-         at.y-half <= y <= at.y+half &&
-         at.z-half <= z <= at.z+half 
-end
-
 #Keep going up levels until contained, or run out.
-function up_until_contained(from::OctTree, x::Number,y::Number,z::Number)
-  while from.parent!=nothing && !is_contained(from, x,y,z)
+function up_until_contained{T}(from::OctTree, thing::T)
+  while from.parent!=nothing && !is_contained(from, thing)
     from = from.parent
   end
   return from
@@ -91,37 +109,38 @@ function up_to_level(from::OctTree, level::Integer)
 end
 up_to_top(of::OctTree) = up_to_level(of, typemax(Int16))
 
-function down_to_level(from::OctTree, x::Number,y::Number,z::Number, 
-                       level::Integer)
+function down_to_level{T}(from::OctTree, thing::T, level::Integer)
   assert( level <= from.level )
-  assert( is_contained(from, x,y,z) )
+  assert( is_contained(from, thing) )
   while level < from.level #Go down until level==from.level
-    next = from.arr[index_of_pos(from,x,y,z)]
-    if next==nothing #At end.
+    i = index_of_pos(from, thing)
+    if i==0 #Can't go down more
       return from
     end
-    from = next
-    assert(is_contained(from, x,y,z),
+    if from.arr[i]==nothing #at end.
+      return from
+    end
+    from = from.arr[i]
+    assert(is_contained(from, thing),
            "Escaped containment going down? 
-$(x,y,z), $level
-$(from.x,from.y,from.z) $(from.level)
-$(is_contained(from, x,y,z))")
+$thing, $level
+$(from.pos) $(from.level)
+$(is_contained(from, thing))")
   end
   return from 
 end
 
 #Go to some level at a position in a quad tree, stopping when the tree ends.
-function to_level(from::OctTree, x::Number,y::Number,z::Number, 
-                  level::Integer)
+function to_level{T}(from::OctTree, thing::T, level::Integer)
   from = up_to_level(from, level)
   if from.parent==nothing && level > from.level || level == from.level
-    return from #Hit highest node.
+    return from #Hit highest node or happy with it.
   end
-  from = up_until_contained(from,  x,y,z)
-  if !is_contained(from, x,y,z) || level == from.level #Got/couldn't go there
+  from = up_until_contained(from, thing)
+  if !is_contained(from, thing) || level == from.level #Got/couldn't go there
     return from  
   end
-  return down_to_level(from, x,y,z, level)
+  return down_to_level(from, thing, level)
 end
 
 #Expand one octtree up.
@@ -129,17 +148,18 @@ function create_upside_octtree(from::OctTree, dirs::(Bool,Bool,Bool))
   stepsize = node_size(from)/2
   step(way::Bool) = (way ? stepsize : -stepsize)
   dx,dy,dz = dirs
+  f_x,f_y,f_z = from.pos
   new = OctTree(nothing, from.level+1, #no parent, of course.
-                from.x + step(dx),from.y + step(dy),from.z + step(dz))
-  i = index_of_pos(new, from.x,from.y,from.z)
+                (f_x + step(dx),f_y + step(dy),f_z + step(dz)))
+  i = index_of_pos(new, from.pos)
   new.arr[i] = from #Register as child.
   return new
 end
 
-function expand_up_to_level(from::OctTree, x::Number,y::Number,z::Number, 
-                            level::Integer, #Latter are directions to go to.
-                            dirs::(Bool,Bool,Bool))
-  from = to_level(from, x,y,z,level) #Go there as far as possible
+function expand_up_to_level{T}(from::OctTree, thing::T,#TODO type
+                              level::Integer, #Latter are directions to go to.
+                              dirs::(Bool,Bool,Bool))
+  from = to_level(from,thing,level) #Go there as far as possible
   while level > from.level
     assert(from.parent==nothing, "Aught to be expanding upward,\
 but already stuff there.")
@@ -148,62 +168,61 @@ but already stuff there.")
   end
   return from
 end
-expand_up_to_level(from::OctTree,
-                   x::Number,y::Number,z::Number,level::Integer) = #!
-    expand_up_to_level(from, x,y,z,level, (x>from.x, y>from.y, z>from.z))
+expand_up_to_level{T}(from::OctTree, thing::T,level::Integer) = #!
+    expand_up_to_level(from, thing,level, octtree_dirs(from,thing))
 
-function expand_up_to_contained(from::OctTree, x::Number,y::Number,z::Number, 
-                                level::Integer)
-  while !is_contained(from, x,y,z)
+function expand_up_to_contained{T}(from::OctTree, thing::T, level::Integer)
+  while !is_contained(from, thing)
     assert(from.parent==nothing, "Don't need to expand up to contain.")
-    from.parent = create_upside_octtree(from, (x>from.x, y>from.y, z>from.z))
+    from.parent = create_upside_octtree(from, octtree_dirs(from,thing))
     from = from.parent
   end
-  assert( is_contained(from,x,y,z) )
+  assert( is_contained(from,thing) )
   return from
 end
 
-function expand_down_to_level(from::OctTree, x::Number,y::Number,z::Number, 
-                              level::Integer)
-  assert( is_contained(from, x,y,z) )
+function expand_down_to_level{T}(from::OctTree, thing::T,level::Integer)
+  assert( is_contained(from, thing) )
   while level < from.level #Need to deepen it.
-    i = index_of_pos(from, x,y,z)
+    i = index_of_pos(from, thing)
+    if i==0
+      return from
+    end
     stepsize = node_size(from)/4
     step(way::Bool) = (way ? stepsize : -stepsize)
     #Make a quadtree node down there and go there.
-    from.arr[i] = 
-      OctTree(from, from.x + step(x>from.x), 
-              from.y + step(y>from.y),from.z + step(z>from.z))
+    dx,dy,dz = octtree_dirs(from,thing)
+    x,y,z = from.pos
+    from.arr[i] = OctTree(from, (x + step(dx), y + step(dy),z + step(dz)))
     from = from.arr[i]
   end
   return from
 end
 
 #Increase the completeness of the quad tree to some level.
-function expand_to_level(from::OctTree, x::Number,y::Number,z::Number, 
-                         level::Integer, expand_contain::Bool)
-  from = expand_up_to_level(from, x,y,z,level)
-  from = up_until_contained(from,  x,y,z) #Try get contained.
-  if !is_contained(from, x,y,z)
+function expand_to_level{T}(from::OctTree, thing::T,
+                            level::Integer, expand_contain::Bool)
+  from = expand_up_to_level(from, thing,level)
+  from = up_until_contained(from, thing) #Try get contained.
+  if !is_contained(from, thing)
     if !expand_contain #Can't go down if not contained in current.
       return from
     end
-    from = expand_up_to_contained(from, x,y,z, level)
+    from = expand_up_to_contained(from, thing, level)
   end
-  from = to_level(from, x,y,z,level)
+  from = to_level(from, thing,level)
   #The rest is down.
-  return expand_down_to_level(from, x,y,z, level)
+  return expand_down_to_level(from, thing, level)
 end
-expand_to_level(from::OctTree, x::Number,y::Number,z::Number,level::Integer) =
-    expand_to_level(from, x,y,z,level, true) #!
+expand_to_level{T}(from::OctTree, thing::T,level::Integer) =
+    expand_to_level(from, thing,level, true) #!
 
 function consistency_check_this(of::OctTree)
   assert(!is(of.parent,of), "Invalid state: Parent same as OctTree node")
   for el in of.arr #TODO contains_is
     assert(!is(el,of), "Invalid state: Child same as Octree node")
     if el!=nothing
-      assert(is_contained(of, el.x,el.y,el.z), 
-             "Invalid state: misplaced subtree")
+      assert(is_contained(of, el.pos), "Invalid state: misplaced subtree")
     end
   end
 end
