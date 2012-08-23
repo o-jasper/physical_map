@@ -9,9 +9,9 @@
 
 #TODO what about iterators anyway? did they suck, why?
 
-type OctTreeWhole
+type WholeOctTree
 end
-is_contained(in::OctTree, whole::OctTreeWhole) = true
+is_contained(in::OctTree, whole::WholeOctTree) = true
 
 #Iterates down to some level.
 type OctTreeIter{T}
@@ -20,22 +20,7 @@ type OctTreeIter{T}
   next_list::Array{OctTree,1}
   downto_level::Int16
 end
-
-OctTreeIter{T}(thing::T, at::OctTree, downto_level::Integer) =
-    OctTreeIter(thing, [at],Array(OctTree,0),int16(downto_level))
-OctTreeIter{T}(thing::T, at::OctTree) =
-    OctTreeIter(thing, [at],Array(OctTree,0),typemin(Int16))
-
-OctTreeIter{T}(thing::T, at::OctTree) =
-    OctTreeIter(thing, [at],Array(OctTree,0),typemin(Int16))
-
-OctTreeIter(at::OctTree, downto_level::Integer) =
-    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),int16(downto_level))
-OctTreeIter(at::OctTree) =
-    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),typemin(Int16))
-
-OctTreeIter(at::OctTree) =
-    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),typemin(Int16))
+#NOTE constructors aren't named as ones (object is not for direct use)
 
 start(at::OctTree) = OctTreeIter(at)
 start(iter::OctTreeIter) = iter
@@ -98,57 +83,33 @@ end
 done(q::Union(OctTreeIterPoint,OctTree), iter::OctTreeIterPoint) = 
     node_of_pos(iter.at,iter.pos) == nothing
 
-#Iterates upward.
-type OctTreeIterUpward
-  at::OctTree
-end
-
-start(iter::OctTreeIterUpward) = iter
-
-function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIterUpward)
-  assert( iter.at.parent!=nothing, "BUG: seems like `done` failed.")
-  iter.at = iter.at.parent
-  return (iter.at, iter)
-end
-
-done(q::Union(OctTreeIter,OctTree), iter::OctTreeIterUpward) =
-    iter.at.parent==nothing
-
 #Functions that make these iterators:
 
-#Iterate down to some level.(level-by-level)
-iter_downto(at::OctTree, downto_level::Integer) = OctTreeIter(at)
+#'Bases' that actually construct the iterator.
+iter_downto{T}(thing::T, at::OctTree, downto_level::Integer) =
+    OctTreeIter(thing, [at],Array(OctTree,0),int16(downto_level))
+
+#Note no point in downto level if you're iterating a point!
+iter_downto(pos::(Number,Number,Number), at::OctTree) = 
+    OctTreeIterPoint(at, pos)
+
+#Various overloads.
+iter_downto(at::OctTree, downto_level::Integer) =
+    iter_downto(WholeOctTree(), at,downto_level)
+
+iter_down{T}(thing::T, at::OctTree) =
+    iter_downto(thing, at, typemin(Int16))
+iter_down(at::OctTree) =
+    iter_down(WholeOctTree(), at)
+
 #iterate whole, first goes up. (level-by-level)
+iter_whole{T}(thing::T, of::OctTree, downto_level::Integer) = 
+    iter_downto(thing, up_to_top(of),downto_level)
+iter_whole{T}(thing::T, of::OctTree) = 
+    iter_down(thing, up_to_top(of))
+
 iter_whole(of::OctTree, downto_level::Integer) = 
-    iter_downto(up_to_top(of),downto_level)
+    iter_whole(WholeOctTree(), of, downto_level)
 iter_whole(of::OctTree) = 
-    iter_downto(up_to_top(of),typemin(Int16))
-#Iterate all the way down. (level-by-level)
-iter_down(at::OctTree) = OctTreeIter(at)
+    iter_whole(WholeOctTree(), of)
 
-#Iterate upward.(effectively at a point)
-iter_up(at::OctTree) = OctTreeIterUpward(at)
-#Iterate at a point. You can break the for-loop to get upto_level.
-iter_point(at::OctTree, point::(Number,Number,Number),
-              down_to_level::Integer) =
-    iter_up(down_to_level(at, x,y,z, down_to_level))
-
-iter_point(at::OctTree, x::Number,y::Number,z::Number) = 
-    iter_point(at, x,y,z, typemin(Int16))
-
-#Iterate a thing. Difference is that you won't necessarily hit bottom. 
-iter_thing{T}(at::OctTree, thing::T, down_to_level::Integer,
-              upward_first::Bool) = 
-    OctTreeIterThing(at, thing, downto_level)
-
-iter_thing{T}(at::OctTree, thing::T, down_to_level::Integer) =
-    iter_thing(at, thing, downto_level,true)
-
-iter_thing{T}(at::OctTree, thing::T) =
-    iter_thing(at, thing, typemin(Int16))
-#That subcase.
-iter_thing(at::OctTree, pos::(Number,Number,Number),
-           down_to_level::Integer, upward_first::Bool) =
-    iter_point(at, pos,down_to_level)
-
-#TODO iter_block
