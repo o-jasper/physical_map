@@ -73,10 +73,10 @@ function index_of_pos(from::OctTree, pos::(Number,Number,Number))
   return 1+(x>f_x ? 1 : 0) + (y>f_y ? 2 : 0) + (z>f_z ? 4 : 0)
 end
 #Whether a octtree node contains the object.
-function is_contained(at::OctTree, pos::(Number,Number,Number))
-  half = node_size(at)/2
+function is_contained(in::OctTree, pos::(Number,Number,Number))
+  half = node_size(in)/2
   x,y,z = pos
-  ax,ay,az = at.pos
+  ax,ay,az = in.pos
   return ax-half <= x <= ax+half &&
          ay-half <= y <= ay+half &&
          az-half <= z <= az+half 
@@ -121,11 +121,20 @@ function down_to_level{T}(from::OctTree, thing::T, level::Integer)
       return from
     end
     from = from.arr[i]
-    assert(is_contained(from, thing),
-           "Escaped containment going down? 
-$thing, $level
-$(from.pos) $(from.level)
-$(is_contained(from, thing))")
+  end
+  return from 
+end
+#Slightly slimmer version, with specific type.
+function down_to_level(from::OctTree, pos::(Number,Number,Number),
+                       level::Integer)
+  assert( level <= from.level )
+  assert( is_contained(from, pos) )
+  while level < from.level #Go down until level==from.level
+    next = node_of_pos(from, pos)
+    if next==nothing #at end.
+      return from
+    end
+    from = next
   end
   return from 
 end

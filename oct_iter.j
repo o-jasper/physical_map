@@ -9,26 +9,42 @@
 
 #TODO what about iterators anyway? did they suck, why?
 
+type OctTreeWhole
+end
+is_contained(in::OctTree, whole::OctTreeWhole) = true
+
 #Iterates down to some level.
-type OctTreeIter
+type OctTreeIter{T}
+  thing::T
   list::Array{OctTree,1}
   next_list::Array{OctTree,1}
   downto_level::Int16
 end
 
+OctTreeIter{T}(thing::T, at::OctTree, downto_level::Integer) =
+    OctTreeIter(thing, [at],Array(OctTree,0),int16(downto_level))
+OctTreeIter{T}(thing::T, at::OctTree) =
+    OctTreeIter(thing, [at],Array(OctTree,0),typemin(Int16))
+
+OctTreeIter{T}(thing::T, at::OctTree) =
+    OctTreeIter(thing, [at],Array(OctTree,0),typemin(Int16))
+
 OctTreeIter(at::OctTree, downto_level::Integer) =
-    OctTreeIter([at],Array(OctTree,0),int16(downto_level))
+    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),int16(downto_level))
 OctTreeIter(at::OctTree) =
-    OctTreeIter([at],Array(OctTree,0),typemin(Int16))
+    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),typemin(Int16))
+
+OctTreeIter(at::OctTree) =
+    OctTreeIter(OctTreeWhole(), [at],Array(OctTree,0),typemin(Int16))
 
 start(at::OctTree) = OctTreeIter(at)
 start(iter::OctTreeIter) = iter
 
-function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIter)
+function next{T}(q::Union(OctTreeIter{T},OctTree), iter::OctTreeIter{T})
   function append_children(node)
     if node.level > iter.downto_level
       for el in ret.arr #Add the elements to make the next list.
-        if el!=nothing 
+        if el!=nothing && is_contained(el, iter.thing)
           push(iter.next_list, el)
         end
       end
@@ -49,10 +65,40 @@ function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIter)
   return (ret,iter)
 end
 
-done(q::Union(OctTreeIter,OctTree),iter::OctTreeIter) = 
+done{T}(q::Union(OctTreeIter{T},OctTree),iter::OctTreeIter{T}) = 
     isempty(iter.list) && isempty(iter.next_list)
 
-#Iterates upward, which is good for for instance a point.
+#Iterates downward at a point. (NOTE: defaultly doesn't go up.)
+type OctTreeIterPoint
+  at::OctTree
+  pos::(Float64,Float64,Float64)
+  
+  function OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number))
+    x,y,z = pos
+    new(is_contained(at, pos) ? at : OctTree(), #dead end if not contained.
+        (float64(x), float64(y), float64(z)))
+  end
+end
+#Setting to top true makes it go all the way to the top.
+OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number), to_top::Bool) =
+    OctTreeIterPoint(to_top ? up_to_top(at) : at, pos)
+#Up to some level.
+OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number), 
+                 to_level::Integer) =
+    OctTreeIterPoint(up_to_level(at,to_level), pos)
+
+start(iter::OctTreeIterPoint) = iter
+
+function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIterPoint)
+  ret = iter.at
+  iter.at = node_of_pos(iter.at, iter.pos)
+  return (ret, iter)
+end
+
+done(q::Union(OctTreeIterPoint,OctTree), iter::OctTreeIterPoint) = 
+    node_of_pos(iter.at,iter.pos) == nothing
+
+#Iterates upward.
 type OctTreeIterUpward
   at::OctTree
 end
@@ -67,51 +113,6 @@ end
 
 done(q::Union(OctTreeIter,OctTree), iter::OctTreeIterUpward) =
     iter.at.parent==nothing
-
-#Iterates upward and at a spot.
-type OctTreeIterThing
-  upward_p::Bool
-  stage::Int8
-  upward::OctTreeIterUpward
-  downward::OctTreeIter
-
-  OctTreeIterThing(upward::OctTreeIterUpward, downward::OctTreeIter, 
-                   upward_first::Bool) =
-      new(upward_first,int8(0), upward,downward)
-end
-
-OctTreeIterThing{T}(at::OctTree, thing::T,
-                    downto_level::Integer,upward_first::Bool) =
-    OctTreeIterThing(down_to_level(at, x,y,z, down_to_level),
-                     downto_level, upward_first)
-
-OctTreeIterThing(at::OctTree,downto_level::Integer,upward_first::Bool) =
-    OctTreeIterThing(OctIterUpward(at), OctTreeIter(at, downto_level),
-                     upward_first)
-
-start(iter::OctTreeIterThing) = iter
-function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIterThing)
-  assert(iter.stage < 2)
-  if iter.upward_p
-    ret,upward = next(q,iter.upward)
-    iter.upward = upward
-    if done(q,iter.upward)
-      iter.stage += 1
-      iter.upward_p = false
-    end 
-    return (ret,iter)
-  else
-    ret,downward = next(q,iter.downward)
-    iter.downward = downward
-    if done(q,iter.downward)
-      iter.stage += 1
-      iter.upward_p = true
-    end 
-    return (ret,iter)
-  end
-end
-done(q::Union(OctTreeIter,OctTree), iter::OctTreeIterThing) = (iter.stage==2)
-
 
 #Functions that make these iterators:
 
