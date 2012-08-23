@@ -23,7 +23,7 @@ end
 #NOTE constructors aren't named as ones (object is not for direct use)
 
 start(at::OctTree) = OctTreeIter(at)
-start(iter::OctTreeIter) = iter
+start{T}(iter::OctTreeIter{T}) = iter
 
 function next{T}(q::Union(OctTreeIter{T},OctTree), iter::OctTreeIter{T})
   function append_children(node)
@@ -54,34 +54,49 @@ done{T}(q::Union(OctTreeIter{T},OctTree),iter::OctTreeIter{T}) =
     isempty(iter.list) && isempty(iter.next_list)
 
 #Iterates downward at a point. (NOTE: defaultly doesn't go up.)
-type OctTreeIterPoint
-  at::OctTree
-  pos::(Float64,Float64,Float64)
+type OctTreeIterDown{T}
+  at::Union(OctTree,Nothing)
+  thing::T
   
-  function OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number))
-    x,y,z = pos
-    new(is_contained(at, pos) ? at : OctTree(), #dead end if not contained.
-        (float64(x), float64(y), float64(z)))
+  function OctTreeIterDown(at::OctTree, thing::T)
+    new(is_contained(at, thing) ? at : OctTree(), #dead end if not contained.
+        thing)
   end
 end
 #Setting to top true makes it go all the way to the top.
-OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number), to_top::Bool) =
-    OctTreeIterPoint(to_top ? up_to_top(at) : at, pos)
+OctTreeIterDown{T}(at::OctTree, thing::T, to_top::Bool) =
+    OctTreeIterDown(to_top ? up_to_top(at) : at, thing)
 #Up to some level.
-OctTreeIterPoint(at::OctTree, pos::(Number,Number,Number), 
-                 to_level::Integer) =
-    OctTreeIterPoint(up_to_level(at,to_level), pos)
+OctTreeIterDown{T}(at::OctTree, thing::T, to_level::Integer) =
+    OctTreeIterDown(up_to_level(at,to_level), pos)
 
-start(iter::OctTreeIterPoint) = iter
+start{T}(iter::OctTreeIterDown{T}) = iter
 
-function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIterPoint)
+function next{T}(q::Union(OctTreeIterDown{T},OctTree), 
+                 iter::OctTreeIterDown{T})
   ret = iter.at
-  iter.at = node_of_pos(iter.at, iter.pos)
+  iter.at = node_of_pos(iter.at, iter.thing)
   return (ret, iter)
 end
 
-done(q::Union(OctTreeIterPoint,OctTree), iter::OctTreeIterPoint) = 
-    node_of_pos(iter.at,iter.pos) == nothing
+done{T}(q::Union(OctTreeIterDown,OctTree), iter::OctTreeIterDown{T}) = 
+    iter.at == nothing
+
+#Iterates upward.(pretty useless afaik)
+type OctTreeIterUpward
+  at::Union(OctTree,Nothing)
+end
+
+start(iter::OctTreeIterUpward) = iter
+
+function next(q::Union(OctTreeIter,OctTree), iter::OctTreeIterUpward)
+  ret = iter.at
+  iter.at = iter.at.parent
+  return (ret, iter)
+end
+
+done(q::Union(OctTreeIter,OctTree), iter::OctTreeIterUpward) =
+    iter.at==nothing
 
 #Functions that make these iterators:
 
@@ -89,9 +104,9 @@ done(q::Union(OctTreeIterPoint,OctTree), iter::OctTreeIterPoint) =
 iter_downto{T}(thing::T, at::OctTree, downto_level::Integer) =
     OctTreeIter(thing, [at],Array(OctTree,0),int16(downto_level))
 
-#Note no point in downto level if you're iterating a point!
+#Note no point in downto level if you're iterating a point, just break.
 iter_downto(pos::(Number,Number,Number), at::OctTree) = 
-    OctTreeIterPoint(at, pos)
+    OctTreeIterDown(at, pos)
 
 #Various overloads.
 iter_downto(at::OctTree, downto_level::Integer) =

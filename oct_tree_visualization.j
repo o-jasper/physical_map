@@ -38,7 +38,7 @@ function draw_lines_at(at::OctTree)
 end
 #Draw the given node and the lower nodes in lines
 function draw_lines_whole(of::OctTree, downto_level::Integer)
-  for q = OctTreeIter(up_to_top(of), downto_level)
+  for q = iter_whole(of, downto_level)
     draw_lines_at(q)
   end
 end

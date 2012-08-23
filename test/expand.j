@@ -17,6 +17,7 @@ load("gl_util.j")
 load("sdl_bad_utils/sdl_event.j")
 
 load("universe_map/oct_tree.j")
+load("universe_map/oct_tree_expand.j")
 load("universe_map/oct_iter.j")
 load("universe_map/oct_tree_visualization.j")
 
