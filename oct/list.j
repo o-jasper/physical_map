@@ -10,7 +10,7 @@
 #Allows the content to have lists, and the user to add stuff to the list
 # using the octtree as spatial sort.
 
-natural_level(size::Number) = int16(log2(size))
+natural_level(size::Number) = int16(log2(size)+1)
 
 size_under(obj::(Number,Number,Number)) = 0
 function size_under(block::Block) 
@@ -21,21 +21,20 @@ end
 natural_level{O}(obj::O) = int16(log2(size_under(obj)))
 
 #Define octtree_pos as x,y,z so that the object is at > that those.
-octtree_pos(of::(Number,Number,Number) = of
+octtree_pos(of::(Number,Number,Number)) = of
 octtree_pos(block::Block) =block[1]
 
 #Adding objects.
-function add_obj{O,M}(to::OctTree, obj::O, natural_level::Int16, manner::M)
+function add_obj{O,M}(to::OctTree, obj::O, natural_level::Int16, m::M)
   pos = octtree_pos(obj)
-  add_to = to_level(to, pos, natural_level) #Find where to put it.
-  #Put it there.
-  if add_obj(add_to, obj,m) #User has to define add_obj, should return if it needs deepening.
-    deepen_1_whole(add_to)
-    after_deepen(add_to,m) #Another user-defined thing.
-  end
+#Find where to put it.
+  maybe_upward = expand_up_to_contained(to, obj) #May always expand up.
+  add_to = down_to_level(maybe_upward,obj, natural_level) #Not always down.
+  #Put it there. User had to define `enter_obj`
+  enter_obj(add_to, obj,m)
 end
 #Default: figure level from obj.
-add_obj{O}(to::OctTree, obj::O, manner::M) = #!
+add_obj{O,M}(to::OctTree, obj::O, m::M) = #!
     add_obj(to,obj, natural_level(obj),m)
 
 #Iterating/searching for objects.

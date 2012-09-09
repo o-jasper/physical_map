@@ -10,9 +10,10 @@
 typealias Block ((Number,Number,Number),(Number,Number,Number))
 
 #Defining geometrically_surrounding, you can use these:
+# TODO: hmm need to think this through.
 #(probably best to return a block as below)
-index_of_pos{T}(in::OctTree, thing::T) =
-    index_of_pos(in, geometrically_surrounding(thing))
+size_under{T}(in::OctTree, thing::T) = 
+    sizeof_under(in, geometrically_surrounding(thing))
 is_contained{T}(in::OctTree, thing::T) =
     index_of_pos(in, geometrically_surrounding(thing))
 octree_dirs{T}(in::OctTree, thing::T) =

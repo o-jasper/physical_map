@@ -28,8 +28,11 @@ start{T}(iter::OctTreeIter{T}) = iter
 function next{T}(q::Union(OctTreeIter{T},OctTree), iter::OctTreeIter{T})
   function append_children(node)
     if node.level > iter.downto_level
+      if is(node.arr, nothing)
+        return 
+      end
       for el in ret.arr #Add the elements to make the next list.
-        if el!=nothing && is_contained(el, iter.thing)
+        if is_contained(el, iter.thing)
           push(iter.next_list, el)
         end
       end

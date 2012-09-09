@@ -16,50 +16,10 @@ load("gl_util.j")
 
 load("sdl_bad_utils/sdl_event.j")
 
-load("universe_map/oct_tree.j")
-load("universe_map/oct_tree_expand.j")
-load("universe_map/oct_iter.j")
-load("universe_map/oct_tree_visualization.j")
-
-load("universe_map/oct_list.j")
-
-type ListManner
-end
-
-type FillObj
-  pos::(Float64,Float64,Float64)
-  natural_level::Int16
-  function FillObj(pos::(Number,Number,Number), natural_level::Int16)
-    x,y,z = pos
-    return new((float64(x),float64(y),float64(z)), natural_level)
-  end
-end
-
-FillObj(pos::(Number,Number,Number), size::Number) = FillObj(pos, natural_level(size))
-
-
-
-function add_obj{O}(to::OctTree, obj::O, m::ListManner)
-  if to.content == nothing
-    to.content = {obj}
-  else
-    push(to.content, obj)
-  end
-  return length(to.content) > 20
-end
-#NOTE: an idea is to have the iterators drop things..
-function after_deepen(of::OctTree, m::ListManner)
-  list = m.content
-  m.content = {}
-  while !isempty(list)
-    el = pop(list)
-    if el.natural_level < of.level # Should go down.
-      add_obj(of, el, m)
-    else #Should stay.
-      push(m.content, el)
-    end
-  end
-end
+load("universe_map/oct/tree.j")
+load("universe_map/oct/expand.j")
+load("universe_map/oct/iter.j")
+load("universe_map/oct/visualization.j")
 
 function run_this ()
   screen_width = 640
@@ -81,7 +41,9 @@ function run_this ()
   glpointsize(4)
   while true
     @with_pushed_matrix begin
-      glrotate(30, 1,1,1)
+      if time()%4 < 2
+        glrotate(30, 1,1,1)
+      end
       glscale(2.0^-2)
       glcolor(1,1,1)
       draw_lines_whole(ot)
