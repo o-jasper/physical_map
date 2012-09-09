@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 22-08-2012 Jasper den Ouden.
+#  Copyright (C) 09-09-2012 Jasper den Ouden.
 #
 #  This is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published
@@ -26,12 +26,12 @@ type OctTree
   
   arr::Array{MaybeOctTree,1}
   
-  list::Array{Any,1} #TODO template it?
+  content::Any
 
   function OctTree(parent,level::Integer, pos::(Number,Number,Number))
     x,y,z = pos
     return new(parent,int16(level), (float64(x),float64(y),float64(z)),
-               mk_nothing_arr(), Array(Any,0))
+               mk_nothing_arr(), nothing)
   end
 end
 

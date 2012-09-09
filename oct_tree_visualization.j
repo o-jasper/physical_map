@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 22-08-2012 Jasper den Ouden.
+#  Copyright (C) 09-09-2012 Jasper den Ouden.
 #
 #  This is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published
@@ -9,32 +9,36 @@
 
 #Visualization of the oct tree for testing & behavior observation. 
 
-#Draw a single node in lines.
-function draw_lines_at(at::OctTree)
-  s = 2*2.0^at.level
-  at_x,at_y,at_z = at.pos
-  x,y,z = (at_x-s/2, at_y-s/2, at_z-s/2)
-  function loop_at_z(z)
+function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
+  fx,fy,fz = f
+  tx,ty,tz = t
+  function hor_loop (z)
     @with_primitive GL_LINE_LOOP begin
-      glvertex(x,  y,  z)
-      glvertex(x,  y+s,z)
-      glvertex(x+s,y+s,z)
-      glvertex(x+s,y,  z)
+      glvertex(fx,fy,z)
+      glvertex(tx,fy,z)
+      glvertex(tx,ty,z)
+      glvertex(fx,ty,z)
     end
   end
-  loop_at_z(z)
-  loop_at_z(z+s)
-#
-  function vertex_pair(x,y)
-    glvertex(x,y,z)
-    glvertex(x,y,z+s)
+  hor_loop(fz)
+  hor_loop(tz)
+  function vert_line(x,y)
+    glvertex(x,y,fz)
+    glvertex(x,y,tz)
   end
   @with_primitive GL_LINES begin
-    vertex_pair(x,  y)
-    vertex_pair(x,  y+s)
-    vertex_pair(x+s,y+s)
-    vertex_pair(x+s,y)
+    vert_line(fx,fy)
+    vert_line(fx,ty)
+    vert_line(tx,ty)
+    vert_line(tx,fy)
   end
+end
+
+#Draw a single node in lines.
+function draw_lines_at(at::OctTree) 
+  hs = node_size(at)/2 
+  x,y,z = at.pos
+  draw_lines_cube((x-hs, y-hs, z-hs), (x+hs, y+hs, z+hs))
 end
 #Draw the given node and the lower nodes in lines
 function draw_lines_whole(of::OctTree, downto_level::Integer)

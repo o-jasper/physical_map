@@ -1,3 +1,11 @@
+#
+#  Copyright (C) 09-09-2012 Jasper den Ouden.
+#
+#  This is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
 
 #Expand one octtree up.
 function create_upside_octtree(from::OctTree, dirs::(Bool,Bool,Bool))
@@ -76,7 +84,7 @@ expand_to_level{T}(from::OctTree, thing::T,level::Integer) =
 function consistency_check_this(of::OctTree)
   assert(!is(of.parent,of), "Invalid state: Parent same as OctTree node")
   for el in of.arr #TODO contains_is
-    assert(!is(el,of), "Invalid state: Child same as Octree node")
+    assert(!is(el,of), "Invalid state: Child same as OctTree node")
     if el!=nothing
       assert(is_contained(of, el.pos), "Invalid state: misplaced subtree")
     end
@@ -96,4 +104,19 @@ function consistency_check(of::OctTree)
     of = of.parent
   end
   consistency_check_down(of)
+end
+
+#Deepen whole array
+function deepen_1_whole(from::OctTree)
+  x,y,z = from.pos
+  s = node_size(from)/4
+  from.arr[1] = OctTree(from, (x-s, y-s, z-s)) #Binary count up with  - and + there.
+  from.arr[2] = OctTree(from, (x+s, y-s, z-s))
+  from.arr[3] = OctTree(from, (x-s, y+s, z-s))
+  from.arr[4] = OctTree(from, (x+s, y+s, z-s))
+
+  from.arr[5] = OctTree(from, (x-s, y-s, z+s))
+  from.arr[6] = OctTree(from, (x+s, y-s, z+s))
+  from.arr[7] = OctTree(from, (x-s, y+s, z+s))
+  from.arr[8] = OctTree(from, (x+s, y+s, z+s))
 end

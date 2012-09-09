@@ -1,11 +1,13 @@
 #
-#  Copyright (C) 23-08-2012 Jasper den Ouden.
+#  Copyright (C) 09-09-2012 Jasper den Ouden.
 #
 #  This is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
+
+typealias Block ((Number,Number,Number),(Number,Number,Number))
 
 #Defining geometrically_surrounding, you can use these:
 #(probably best to return a block as below)
@@ -17,22 +19,19 @@ octree_dirs{T}(in::OctTree, thing::T) =
     index_of_pos(in, geometrically_surrounding(thing))
 
 #Block.
-function index_of_pos(in::OctTree, 
-                      block::((Number,Number,Number),(Number,Number,Number)))
+function index_of_pos(in::OctTree, block::Block)
   f,t = block
   i_f = index_of_pos(in,f)
   i_t = index_of_pos(in,t)
   return i_f==i_t ? i_f : 0 #Zero indicates it doesn't fit.
 end
 
-function is_contained(in::OctTree, 
-                      block::((Number,Number,Number),(Number,Number,Number)))
+function is_contained(in::OctTree, block::Block)
   f,t = block
   return is_contained(in,f) &&is_contained(in,t)
 end
-
-function octree_dirs(from::OctTree,
-                     block::((Number,Number,Number),(Number,Number,Number)))
+#Which direction to drop the block down to.
+function octree_dirs(from::OctTree, block::Block)
   f,t = block
   fx,fy,fz = f
   tx,ty,tz = t

@@ -1,8 +1,6 @@
 
 # TODO
 
-* write visualization stuff
-
 * write test with matrices set up and stuff
  + test expansion and searching in various ways
  
