@@ -7,19 +7,24 @@
 # (at your option) any later version.
 #
 
-load("load_so.j")
-load("get_c.j")
-load("sdl_bad_utils/init_stuff.j")
+load("util/util.jl")
+load("util/get_c.jl")
 
-load("autoffi/gl.j")
-load("gl_util.j")
+load("autoffi/gl.jl")
+load("ffi_extra/gl.jl")
 
-load("sdl_bad_utils/sdl_event.j")
+load("sdl_bad_utils/sdl_bad_utils.jl")
 
-load("universe_map/oct/tree.j")
-load("universe_map/oct/expand.j")
-load("universe_map/oct/iter.j")
-load("universe_map/oct/visualization.j")
+import GetC.*, OJasper_Util.*, SDL_BadUtils.*, AutoFFI_GL.*, FFI_Extra_GL.*
+
+load("universe_map/oct/octtree.jl")
+#load("universe_map/oct/tree.j")
+#load("universe_map/oct/expand.j")
+#load("universe_map/oct/iter.j")
+load("universe_map/oct/visualization.jl")
+
+import OctTreeModule.*, OctTreeVisualization.*
+
 
 function run_this ()
   screen_width = 640
@@ -40,7 +45,7 @@ function run_this ()
   list = {} 
   glpointsize(4)
   while true
-    @with_pushed_matrix begin
+    @with glpushed() begin
       if time()%4 < 2
         glrotate(30, 1,1,1)
       end
@@ -48,13 +53,13 @@ function run_this ()
       glcolor(1,1,1)
       draw_lines_whole(ot)
       glcolor(1,1,0)
-      @with_primitive GL_POINTS for el in list
+      @with glprimitive(GL_POINTS) for el in list
         x,y,z = el
         glvertex(x,y,z)
       end
     end
     
-    @with_primitive GL_TRIANGLES begin
+    @with glprimitive(GL_TRIANGLES) begin
       glcolor(1.0,0.0,0.0)
       glvertex(mx(),my())
       glvertex(mx()+0.1,my())

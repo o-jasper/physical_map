@@ -129,5 +129,4 @@ iter_whole{T}(thing::T, of::OctTree) =
 iter_whole(of::OctTree, downto_level::Integer) = 
     iter_whole(WholeOctTree(), of, downto_level)
 iter_whole(of::OctTree) = 
-    iter_whole(WholeOctTree(), of)
-
+    iter_whole(WholeOctTree(), of, typemin(Int16))

@@ -7,13 +7,19 @@
 # (at your option) any later version.
 #
 
+module OctTreeVisualization
 #Visualization of the oct tree for testing & behavior observation. 
+
+import Base.*, OJasper_Util.*, OctTreeModule.*
+import AutoFFI_GL.*, FFI_Extra_GL.*
+
+export draw_lines_at, draw_lines_whole 
 
 function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
   fx,fy,fz = f
   tx,ty,tz = t
   function hor_loop (z)
-    @with_primitive GL_LINE_LOOP begin
+    @with glprimitive(GL_LINE_LOOP) begin
       glvertex(fx,fy,z)
       glvertex(tx,fy,z)
       glvertex(tx,ty,z)
@@ -26,7 +32,7 @@ function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
     glvertex(x,y,fz)
     glvertex(x,y,tz)
   end
-  @with_primitive GL_LINES begin
+  @with glprimitive(GL_LINES) begin
     vert_line(fx,fy)
     vert_line(fx,ty)
     vert_line(tx,ty)
@@ -49,3 +55,5 @@ end
 
 draw_lines_whole(at::OctTree) = 
     draw_lines_whole(at, typemin(Int16)) #All of them.
+
+end #module OctTreeVisualization

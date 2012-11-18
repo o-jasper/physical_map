@@ -6,23 +6,48 @@
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
+ 
+load("util/util.jl")
+load("util/get_c.jl")
 
-load("load_so.j")
-load("get_c.j")
-load("sdl_bad_utils/init_stuff.j")
+load("autoffi/gl.jl")
+load("ffi_extra/gl.jl")
 
-load("autoffi/gl.j")
-load("gl_util.j")
+load("sdl_bad_utils/sdl_bad_utils.jl")
 
-load("sdl_bad_utils/sdl_event.j")
+import GetC.*, OJasper_Util.*, SDL_BadUtils.*, AutoFFI_GL.*, FFI_Extra_GL.*
 
-load("universe_map/oct/tree.j")
-load("universe_map/oct/expand.j")
-load("universe_map/oct/iter.j")
-load("universe_map/oct/visualization.j")
+load("universe_map/oct/octtree.jl")
+load("universe_map/oct/visualization.jl")
 
-load("universe_map/oct/things.j")
-load("universe_map/oct/list.j")
+import OctTreeModule.*, OctTreeVisualization.*
+
+import OctTreeModule.enter_obj
+
+function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
+  fx,fy,fz = f
+  tx,ty,tz = t
+  function hor_loop (z)
+    @with glprimitive(GL_LINE_LOOP) begin
+      glvertex(fx,fy,z)
+      glvertex(tx,fy,z)
+      glvertex(tx,ty,z)
+      glvertex(fx,ty,z)
+    end
+  end
+  hor_loop(fz)
+  hor_loop(tz)
+  function vert_line(x,y)
+    glvertex(x,y,fz)
+    glvertex(x,y,tz)
+  end
+  @with glprimitive(GL_LINES) begin
+    vert_line(fx,fy)
+    vert_line(fx,ty)
+    vert_line(tx,ty)
+    vert_line(tx,fy)
+  end
+end
 
 type ListManner
 end
@@ -93,7 +118,7 @@ function run_this ()
   println(ot)
 
   while true
-    @with_pushed_matrix begin
+    @with glpushed() begin
 #      glrotate(30*(1+sin(time()))/2, 1,1,1)
       glscale(2.0^-2)
       
@@ -101,7 +126,7 @@ function run_this ()
         if !is(q.content,nothing)
           for el in q.content
             glcolor(0,0,1) #Draw objects.
-            @with_primitive GL_LINES begin
+            @with glprimitive(GL_LINES) begin
               glvertex(el.pos)
               glvertex(q.pos)
             end
@@ -114,7 +139,7 @@ function run_this ()
       draw_lines_whole(ot)
     end
     
-    @with_primitive GL_TRIANGLES begin
+    @with glprimitive(GL_TRIANGLES) begin
       glcolor(1.0,0.0,0.0)
       glvertex(mx(),my())
       glvertex(mx()+0.1,my())
