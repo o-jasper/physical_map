@@ -37,7 +37,7 @@ function inside_p{A,B,T}(obj::ObjAndNot{A,B}, thing::T)
     for el in obj.list
         @case inside(el, thing) begin
             Outside                 : return Outside
-            Partial | MaybePartial  : partial_p = true 
+            Partial | MaybePartial  : (partial_p = true)
         end
     end
     return (partial_p ? MaybePartial : Inside)
@@ -51,8 +51,8 @@ function inside_p{A,T}(obj::ObjOr{A}, thing::T)
     for el in obj.list
         @case inside(el, thing) begin
             Inside       : return Inside
-            Partial      : partial_cnt += 1
-            MaybePartial : partial_cnt += 2
+            Partial      : (partial_cnt += 1)
+            MaybePartial : (partial_cnt += 2)
         end
     end
     return (partial_cnt==1 ? Partial : (partial_cnt>1 ? MaybePartial : Outside))

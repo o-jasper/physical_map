@@ -10,10 +10,12 @@
 module OctTreeVisualization
 #Visualization of the oct tree for testing & behavior observation. 
 
-import Base.*, OJasper_Util.*, OctTreeModule.*
-import AutoFFI_GL.*, FFI_Extra_GL.*
+using Base, OJasper_Util, OctTreeModule
+using AutoFFI_GL, FFI_Extra_GL
 
 export draw_lines_at, draw_lines_whole 
+
+#----no more module stuff.
 
 function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
   fx,fy,fz = f

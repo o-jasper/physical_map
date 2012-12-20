@@ -9,7 +9,7 @@
 
 #Objects made from other stuff. The `obj` method actually makes the objects.
 
-inside_p{Obj,T}(p::Obj, thing::T) = inside_p(obj(p), thing)
+inside_p{Obj,T}(p::Obj, thing::T) = inside_p(p, obj(thing))
 *{Obj,M}(m::M, p::Obj) = m*obj(p)
 +{Obj,V}(v::V, p::Obj) = v+obj(p)
 
@@ -24,7 +24,6 @@ type Cylinder
         new(float64(r),float64(min),float64(max), 
             float64(normalize_p ? dir/norm(dir) : dir))
 end
-inside_p{T}(c::Cylinder
 
 cylinder(r::Number, min::Number,max::Number, dir::Vector) =
     cylinder(r,min,max,dir, true)
@@ -83,12 +82,12 @@ function obj(b::Block) #Cube is done by making the corresponding Convex.
     begin
         addsurf(inpr::Number, n::Vector) = 
             push(surfaces, Surface(float64(inpr),float64(n)))
-        addsurf(tx, [+1, 0,  0])
-        addsurf(fx, [-1, 0,  0])
-        addsurf(ty, [0, +1,  0])
-        addsurf(fx, [0, -1,  0])
-        addsurf(tz, [0,  0, +1])
-        addsurf(fz, [0,  0, -1])
+        addsurf(-fx, [-1, 0,  0])
+        addsurf(+tx, [+1, 0,  0])
+        addsurf(-fy, [0, -1,  0])
+        addsurf(+ty, [0, +1,  0])
+        addsurf(-fz, [0,  0, -1])
+        addsurf(+tz, [0,  0, +1])
     end
     return Convex(positions, surfaces)
 end

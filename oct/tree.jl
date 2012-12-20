@@ -9,6 +9,7 @@
 
 #Note 2.0^.. not being integer sidesteps changes there.
 
+#TODO hrmm, arbitrary-size array (for instance 3*3*3)?
 type OctTree
   parent::Union(Nothing,OctTree)
   level::Int16 #Depth, size of current block is 2*2^(+level)
@@ -24,6 +25,10 @@ type OctTree
                nothing, nothing)
   end
 end
+
+enter_obj(to::OctTree, thing, manner) = 
+    error("No method for entering object type $(typeof(thing)) 
+in manner $manner")
 
 children_cnt(o::OctTree) = (o.arr==nothing ? 0 : 8)
 

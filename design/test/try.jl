@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 22-08-2012 Jasper den Ouden.
+#  Copyright (C) 19-11-2012 Jasper den Ouden.
 #
 #  This is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published
@@ -15,7 +15,7 @@ load("ffi_extra/gl.jl")
 
 load("sdl_bad_utils/sdl_bad_utils.jl")
 
-using OJasper_Util, SDL_BadUtils, AutoFFI_GL, FFI_Extra_GL
+using GetC, OJasper_Util, SDL_BadUtils, AutoFFI_GL, FFI_Extra_GL
 
 load("physical_map/oct/octtree.jl")
 #load("physical_map/oct/tree.j")
@@ -25,6 +25,16 @@ load("physical_map/oct/visualization.jl")
 
 using OctTreeModule, OctTreeVisualization
 
+load("Options.jl")
+using OptionsMod
+
+#TODO no module for it yet.
+load("physical_map/design/logical.jl")
+load("physical_map/design/transfo.jl")
+load("physical_map/design/primitives.jl")
+load("physical_map/design/objs.jl")
+
+load("physical_map/design/octo.jl")
 
 function run_this ()
   screen_width = 640
@@ -36,27 +46,26 @@ function run_this ()
   mx()  = mx(mouse_x())
   my()  = my(mouse_y())
 
-  wait_t = 0.1
-  next_t = time() + wait_t
-  expand_cnt = 0
-  ot = OctTree(-4)
-  println(ot)
-
-  list = {} 
+  ot = OctTree(1)
+  #TODO 'depth histograms' inside and outside.
+  @time octfill_deepen(ot, translate(0.4,0.4, scale(1,2, sphere(1))), -7)
+  
   glpointsize(4)
+  init_t = time()
   while true
     @with glpushed() begin
       if time()%4 < 2
         glrotate(30, 1,1,1)
+        glrotate(10*(time()-init_t),0.1,0.4,1)
       end
       glscale(2.0^-2)
-      glcolor(1,1,1)
-      draw_lines_whole(ot)
-      glcolor(1,1,0)
-      @with glprimitive(GL_POINTS) for el in list
-        x,y,z = el
-        glvertex(x,y,z)
+      if time()%8<4
+          glcolor(1,1,1)
+#          draw_lines_whole(ot)
       end
+      #TODO draw the thing, non-lines
+      glcolor(0,0.4,0)
+      draw_block(ot)
     end
     
     @with glprimitive(GL_TRIANGLES) begin
@@ -65,18 +74,8 @@ function run_this ()
       glvertex(mx()+0.1,my())
       glvertex(mx(),my()+0.1)
     end
-    finalize_draw()
+    finalize_draw() #TODO event catcher to rotate around the thing.
     flush_events()
-
-    if next_t < time()
-      gen = (-1+2*rand(),-1+2*rand(),-1+2*rand())
-      push(list,gen)
-      println("$expand_cnt $gen")
-      expand_cnt += 1
-      expand_to_level(ot, gen, -6)
-      next_t = time() + wait_t
-      consistency_check(ot)
-    end
   end
 end
 

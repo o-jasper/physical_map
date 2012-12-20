@@ -1,4 +1,13 @@
 
+# NOTE
+This project is in an extra-raw state.
+
+Some of the things noted in `.markdown` files are wishful thinking.
+
+Tbh dont know if the octtree is even up to that, 
+surely the drawing process needs to be better for the
+[CSG](https://en.wikipedia.org/wiki/Constructive_solid_geometry) stuff for instance.
+
 ## Data that could be contained:
 
 * Images, where to find images with clear locations(and directions), though!

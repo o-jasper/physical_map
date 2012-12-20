@@ -18,7 +18,7 @@ sphere(r::Number) = Sphere(float64(r))
 
 type Surface #Single surface.
     inpr::Float64
-    n::Vector{Float}
+    n::Vector{Float64}
 end
 function surface(inpr::Number, normal::Vector) 
     len = norm(normal)
@@ -70,21 +70,24 @@ function inside_p(a::Convex, b::Convex)
 end
 #Convex in sphere?
 function inside_p(sphere::Sphere, c::Convex)
-    if inside_p(c, zero(c.positions[1]))
-        for p in c.positions
-            if norm(p) > sphere.r
-                return Partial
-            end
-        end
+    inside_cnt = int64(0)
+    for p in c.positions
+        inside_cnt += (norm(p) <= sphere.r ? 1 :0)
+    end
+    
+    if inside_cnt==length(c.positions)
         return Inside
+    elseif inside_cnt>0
+        return Partial
     end
     for surf in c.surfaces
         if surf.inpr <= sphere.r
-            return Outside
+            return inside_p(c,float64([0,0,0]))==Inside ? Partial : Outside
         end
-    end
+    end   
     return Partial #Needs to be all of them.
 end
+
 #Sphere in convex?
 #function inside_p(c::Convex, sphere::Sphere)
 #    any_outside, any_inside = false,false
@@ -103,16 +106,19 @@ end
 #Calling it *,+ makes sense, right?
 
 +(delta::Vector{Float64}, surface::Surface) = 
-    Surface(surface.inpr - dot(surface.n,delta), s.n)
+    Surface(surface.inpr - dot(surface.n,delta), surface.n)
 +(delta::Vector{Float64}, c::Convex) =
-    Convex(map((x)->x+delta, c.positions), map((x)->x+delta, c.surface))
+    Convex(map((x)->delta + x, c.positions), map((x)->delta + x, c.surfaces))
 
 #TODO hope that is right.
+*(scale::Number, surface::Surface) = Surface(surface.inpr/scale,surface.n)
+
 function *(matrix::Array{Float64,2}, surface::Surface)
-    n = surface.n\(transpose(matrix)
+    n = surface.n \ (transpose(matrix))
     len = norm(n)
     return Surface(surface.inpr/len, n/len)
 end
+
 *{T}(thing::T, c::Convex) = #Elements of the convex dont care about whole.
     Convex(map(x->(thing*x), c.positions), map(x->thing*x, c.surfaces))
 

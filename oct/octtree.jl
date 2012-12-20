@@ -1,7 +1,9 @@
 
 module OctTreeModule
 
-import Base.*, OJasper_Util.*
+using Base, OJasper_Util
+
+import Base.start, Base.next, Base.done
 
 export OctTree, children_cnt, node_size
 
@@ -24,10 +26,10 @@ export deepen_1_whole #TODO do i want this exported?..
 
 export consistency_check_this, consistency_check_down, consistency_check
 
-load("universe_map/oct/tree.jl")
-load("universe_map/oct/expand.jl")
-load("universe_map/oct/iter.jl")
-load("universe_map/oct/things.jl")
-load("universe_map/oct/list.jl")
+load("physical_map/oct/tree.jl")
+load("physical_map/oct/expand.jl")
+load("physical_map/oct/iter.jl")
+load("physical_map/oct/things.jl")
+load("physical_map/oct/list.jl")
 
 end

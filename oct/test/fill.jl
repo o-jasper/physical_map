@@ -15,14 +15,15 @@ load("ffi_extra/gl.jl")
 
 load("sdl_bad_utils/sdl_bad_utils.jl")
 
-import GetC.*, OJasper_Util.*, SDL_BadUtils.*, AutoFFI_GL.*, FFI_Extra_GL.*
+using OJasper_Util, SDL_BadUtils, AutoFFI_GL, FFI_Extra_GL
 
-load("universe_map/oct/octtree.jl")
-load("universe_map/oct/visualization.jl")
+load("physical_map/oct/octtree.jl")
+load("physical_map/oct/visualization.jl")
 
-import OctTreeModule.*, OctTreeVisualization.*
+using OctTreeModule, OctTreeVisualization
 
-import OctTreeModule.enter_obj
+import OctTreeModule.enter_obj, OctTreeModule.natural_level
+import OctTreeModule.is_contained, OctTreeModule.octtree_pos, OctTreeModule.octtree_dirs
 
 function draw_lines_cube(f::(Number,Number,Number), t::(Number,Number,Number))
   fx,fy,fz = f
